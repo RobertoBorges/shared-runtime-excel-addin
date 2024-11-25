@@ -1,0 +1,36 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Launch Server",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "program": "${workspaceFolder}/restapi-websocket/server.js"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Launch Client",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "program": "${workspaceFolder}/shared-runtime-excel-addin/functions.js"
+        },
+        {
+            "type": "node-terminal",
+            "request": "launch",
+            "name": "Launch Client Dev Server",
+            "command": "npm run dev-server",
+            "cwd": "${workspaceFolder}/shared-runtime-excel-addin"
+        }
+    ],
+    "compounds": [
+        {
+            "name": "Launch Both",
+            "configurations": ["Launch Server", "Launch Client Dev Server"]
+        }
+    ]
+}

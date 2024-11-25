@@ -36,24 +36,6 @@ export function currentTime() {
 }
 
 /**
- * Increments a value once a second.
- * @customfunction
- * @param {number} incrementBy Amount to increment
- * @param {CustomFunctions.StreamingInvocation<number>} invocation
- */
-export function increment(incrementBy, invocation) {
-  let result = 0;
-  const timer = setInterval(() => {
-    result += incrementBy;
-    invocation.setResult(result);
-  }, 1000);
-
-  invocation.onCanceled = () => {
-    clearInterval(timer);
-  };
-}
-
-/**
  * Writes a message to console.log().
  * @customfunction LOG
  * @param {string} message String to write.
@@ -61,6 +43,36 @@ export function increment(incrementBy, invocation) {
  */
 export function logMessage(message) {
   console.log(message);
-
   return message;
+}
+
+/**
+ * Connects to the WebSocket server and logs messages
+ * @customfunction WEBSOCKET
+ * @param {CustomFunctions.StreamingInvocation<string>} invocation Custom function invocation
+ */
+export function connectWebSocket(invocation) {
+  const ws = new WebSocket("ws://localhost:3001");
+
+  ws.onopen = () => {
+    console.log("Connected to WebSocket server");
+    ws.send("Hello Server!");
+  };
+
+  ws.onmessage = (event) => {
+    console.log(`Received message: ${event.data}`);
+    invocation.setResult(event.data);
+  };
+
+  ws.onclose = () => {
+    console.log("Disconnected from WebSocket server");
+  };
+
+  ws.onerror = (error) => {
+    console.error(`WebSocket error: ${error}`);
+  };
+
+  invocation.onCanceled = () => {
+    ws.close();
+  };
 }
