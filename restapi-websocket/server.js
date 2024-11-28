@@ -23,7 +23,7 @@ wss.on('connection', (ws) => {
     // Broadcast the message to all connected clients
     clients.forEach(client => {
       if (client.ws.readyState === WebSocket.OPEN) {
-        client.ws.send(`Client ${clientId} said: ${message}`);
+        client.ws.send(`New client ${clientId} said: ${message}`);
       }
     });
   });
@@ -31,6 +31,7 @@ wss.on('connection', (ws) => {
   ws.on('close', () => {
     console.log(`Client ${clientId} disconnected`);
     clients = clients.filter(client => client.id !== clientId);
+    console.log(`Remaining clients: ${clients.map(client => client.id).join(', ')}`);
   });
 });
 
@@ -43,7 +44,7 @@ setInterval(() => {
       client.ws.send(message);
     }
   });
-}, 5000); // Send message every 5 seconds
+}, 1000); // Send message every 1 seconds
 
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
