@@ -3,7 +3,7 @@
  * See LICENSE in the project root for license information.
  */
 /* global console, document, Excel, Office */
-import { createNestablePublicClientApplication } from "@azure/msal-browser";
+import { createStandardPublicClientApplication } from "@azure/msal-browser";
 import fetch from "node-fetch";
 let pca = undefined;
 
@@ -14,11 +14,12 @@ Office.onReady(async () => {
   document.getElementById("run").onclick = run;
 
   // Initialize the public client application
-  pca = await createNestablePublicClientApplication({
+  pca = await createStandardPublicClientApplication({
     auth: {
       clientId: "92dce61a-25d2-4377-9b75-471cf5f3001a",
       authority: "https://login.microsoftonline.com/7bf7ca02-20a6-4cc7-a35d-8fa9c5fd4529",
       supportsNestedAppAuth: true,
+      redirectUri: "http://localhost:3000",
     },
   });
 });
@@ -26,19 +27,7 @@ Office.onReady(async () => {
 export async function run() {
   try {
     await Excel.run(async (context) => {
-      /**
-       * Insert your Excel code here
-       */
-      const range = context.workbook.getSelectedRange();
-
-      // Read the range address
-      range.load("address");
-
-      // Update the fill color
-      range.format.fill.color = "yellow";
-
       await context.sync();
-      console.log(`The range address was ${range.address}.`);
 
       // Specify minimum scopes needed for the access token.
       const tokenRequest = {
@@ -51,7 +40,7 @@ export async function run() {
         const userAccount = await pca.acquireTokenSilent(tokenRequest);
         console.log("Acquired token silently.");
         accessToken = userAccount.accessToken;
-        range.values = [[`Token: ${accessToken}`]];
+        // range.values = [[`Token: ${accessToken}`]];
       } catch (error) {
         console.log(`Unable to acquire token silently: ${error}`);
       }
@@ -63,14 +52,14 @@ export async function run() {
           const userAccount = await pca.acquireTokenPopup(tokenRequest);
           console.log("Acquired token interactively.");
           accessToken = userAccount.accessToken;
-          range.values = [[`Token: ${accessToken}`]];
+          // range.values = [[`Token: ${accessToken}`]];
         } catch (popupError) {
           // Acquire token interactive failure.
           console.log(`Unable to acquire token interactively: ${popupError}`);
         }
       }
 
-      window.sharedState = accessToken;
+      window.sharedState = accessToken; //Set token to a shared var for the server to use it
 
       // Log error if both silent and popup requests failed.
       if (accessToken === null) {
@@ -79,22 +68,33 @@ export async function run() {
       }
 
       // Call the Microsoft Graph API with the access token.
-      const response = await fetch(`https://graph.microsoft.com/v1.0/me/drive/root/children?$select=name&$top=10`, {
+      const response = await fetch(`https://graph.microsoft.com/v1.0/me`, {
         headers: { Authorization: accessToken },
       });
 
       if (response.ok) {
         // Write file names to the console.
         const data = await response.json();
-        const names = data.value.map((item) => item.name);
+        const names = data.displayName;
 
         // Be sure the taskpane.html has an element with Id = item-subject.
         const label = document.getElementById("item-subject");
 
         // Write file names to task pane and the console.
-        const nameText = names.join(", ");
-        if (label) label.textContent = nameText;
-        console.log(nameText);
+        if (label) label.textContent = `User ${names}`;
+
+        const ulElement = document.getElementById("list-claims");
+        ulElement.innerHTML = ""; // Clear existing list items
+
+        for (const key in data) {
+          if (Object.prototype.hasOwnProperty.call(data, key)) {
+            const li = document.createElement("li");
+            li.className = "ms-font-m";
+            li.textContent = `>  > ${key}: ${data[key]}`;
+            ulElement.appendChild(li);
+          }
+        }
+        console.log(names);
       } else {
         const errorText = await response.text();
         console.error("Microsoft Graph call failed - error text: " + errorText);

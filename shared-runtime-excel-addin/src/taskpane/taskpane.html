@@ -39,8 +39,8 @@
       </h2>
     </section>
     <main id="app-body" class="ms-welcome__main" style="display: none">
-      <h2 class="ms-font-xl">Discover what Office Add-ins can do for you today!</h2>
-      <ul class="ms-List ms-welcome__features">
+      <h2 class="ms-font-xl" id="welcome"><p><label id="item-subject"></label></p></h2>
+      <ul class="ms-List ms-welcome__features" id="list-claims">
         <li class="ms-ListItem">
           <i class="ms-Icon ms-Icon--Ribbon ms-font-xl"></i>
           <span class="ms-font-m">Achieve more with Office integration</span>
@@ -54,13 +54,10 @@
           <span class="ms-font-m">Create and visualize like a pro</span>
         </li>
       </ul>
-      <p class="ms-font-l">Modify the source files, then click <b>Run</b>.</p>
       <div role="button" id="run" class="ms-welcome__action ms-Button ms-Button--hero ms-font-xl">
-        <span class="ms-Button-label">Run</span>
+        <span class="ms-Button-label">Login</span>
       </div>
-      <p><label id="item-subject"></label></p>
-
-      <p>Get shared state value</p>
+      <p>Get JWT token from the server</p>
       <div>
         <input type="text" id="getBox" />
         <button onclick="getSharedValue()">Get</button>
