@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>SignalR Example</title>
+    <!-- Include the SignalR client library -->
+    <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@latest/dist/browser/signalr.js"></script>
+</head>
+<body>
+    <h1>SignalR Example</h1>
+    <div id="messages"></div>
+
+    <script>
+        // Build a connection to the /myHub endpoint in your ASP.NET Core app
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("http://localhost:5176/myHub")  // Assumes same domain/port. Change if needed.
+            .build();
+
+        // Listen for the "ReceiveMessage" event from the server
+        connection.on("ReceiveMessage", (user, message) => {
+            const el = document.getElementById("messages");
+            el.innerHTML += `<div><strong>${user}:</strong> ${message}</div>`;
+        });
+
+        // Start the connection
+        connection.start()
+            .then(() => {
+                console.log("Connected to SignalR hub");
+            })
+            .catch(err => console.error("SignalR connection error:", err));
+    </script>
+</body>
+</html>

@@ -1,6 +1,11 @@
 ﻿const sharedState = { value: "empty" };
 /* global clearInterval, console, setInterval, CustomFunctions, WebSocket */
+import * as signalR from "@microsoft/signalr";
 const webSocketConnections = new Map();
+const channelInvocations = new Map();
+
+// We'll keep a global variable to store the single SignalR connection
+let signalRConnection = null;
 
 /**
  * Saves a string value to shared state with the task pane
@@ -82,7 +87,7 @@ export function WEBSOCKET(idClient, invocation) {
   };
 
   ws.onmessage = (event) => {
-    console.log(`Received message: ${event.data}`);
+    // console.log(`Received message: ${event.data}`);
     invocation.setResult(`ID: ${uniqueId} data: ${event.data}`);
   };
 
@@ -292,4 +297,98 @@ export function returnInvalidNumberError(first, second, third) {
 
   // Return the results of the first and third parameter calculations and a #NUM! error in place of the second result.
   return [[firstResult], [secondResult], [thirdResult]];
+}
+
+/**************************
+  2) START THE CONNECTION
+***************************/
+/**
+ * Creates (or reuses) the SignalR connection to the .NET server.
+ * @customfunction STARTSIGNALR
+ * @returns {string} Indicates whether we're connected.
+ */
+export async function startSignalR() {
+  try {
+    // If we already have a connection, just return
+    if (signalRConnection) {
+      return "SignalR is already connected.";
+    }
+
+    // Build the connection to your .NET SignalR hub
+    signalRConnection = new signalR.HubConnectionBuilder()
+      .withUrl("http://localhost:5176/myHub") // or wherever your hub is hosted
+      .build();
+
+    // Start the connection
+    await signalRConnection.start();
+    console.log("SignalR connected.");
+    return "SignalR connected successfully.";
+  } catch (err) {
+    console.error("Error connecting to SignalR:", err);
+    // For a custom function, return the error message
+    return `Error: ${err.message || err}`;
+  }
+}
+
+/**************************
+  3) STREAM MESSAGES INTO EXCEL
+***************************/
+/**
+ * @customfunction SIGNALRSTREAM
+ * @param {string} channelName
+ * @param {CustomFunctions.StreamingInvocation<string>} invocation
+ */
+export function signalRStream(channelName, invocation) {
+  // Ensure we have a connection
+  if (!signalRConnection) {
+    invocation.setResult("Not connected. Please run =STARTSIGNALR() first.");
+    return;
+  }
+
+  signalRConnection.invoke("JoinGroup", channelName);
+
+  // One global handler
+  signalRConnection.on("ReceiveMessage", (payload) => {
+    console.log(`Global handler - Received from payload : ${payload}`);
+    const channel = payload.channel;
+
+    if (channelName === channel) {
+      writeToCell(channel, payload.value);
+    }
+  });
+
+  channelInvocations.set(channelName, invocation);
+
+  // Clean up on cancel
+  invocation.onCanceled = () => {
+    const index = channelInvocations[channelName].indexOf(invocation);
+    if (index !== -1) {
+      channelInvocations[channelName].splice(index, 1);
+    }
+  };
+
+  // Optional: Initial message
+  invocation.setResult(`Subscribed to channel: ${channelName}`);
+}
+
+/**
+ * Writes a value to a specific cell using the task pane
+ * @customfunction WRITETOCELL
+ * @param {string} address The address of the cell to write to (e.g., "A1").
+ * @param {string} value The value to write to the cell.
+ * @returns {string} A success message.
+ */
+export async function writeToCell(address, value) {
+  try {
+    await Excel.run(async (context) => {
+      const sheet = context.workbook.worksheets.getActiveWorksheet();
+      const range = sheet.getRange(address);
+      range.values = [[value]];
+      await context.sync();
+    });
+    return `Value "${value}" written to cell ${address}`;
+  } catch (error) {
+    console.error("Error writing to cell:", error);
+    return `Error: ${error.message || error}`;
+  }
 }

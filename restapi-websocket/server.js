@@ -13,6 +13,16 @@ app.get('/', (req, res) => {
   res.send('Hello World!');
 });
 
+app.get("/simpleclient", (req, res) => {
+  res.sendFile(__dirname + "/simpleclient.html");
+});
+
+const cors = require("cors");
+app.use(cors({
+  origin: "http://localhost:3001",
+  credentials: true
+}));
+
 wss.on('connection', (ws) => {
   const clientId = clientIdCounter++;
   console.log(`New client connected: ${clientId}`);
