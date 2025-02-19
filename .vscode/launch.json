@@ -25,12 +25,32 @@
             "name": "Launch Client Dev Server",
             "command": "npm run dev-server",
             "cwd": "${workspaceFolder}/shared-runtime-excel-addin"
+        },
+        {
+            "type": "coreclr",
+            "request": "launch",
+            "name": "Launch Blazor App",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/BlazorAppSIgnalR/bin/Debug/net6.0/BlazorAppSIgnalR.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/BlazorAppSIgnalR",
+            "stopAtEntry": false,
+            "serverReadyAction": {
+                "action": "openExternally",
+                "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
+            },
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development"
+            },
+            "sourceFileMap": {
+                "/Views": "${workspaceFolder}/Views"
+            }
         }
     ],
     "compounds": [
         {
             "name": "Launch Both",
-            "configurations": ["Launch Server", "Launch Client Dev Server"]
+            "configurations": ["Launch Server", "Launch Client Dev Server", "Launch Blazor App"]
         }
     ]
 }
